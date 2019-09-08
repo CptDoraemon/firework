@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	body {
+		margin: 0;
+		font-family: sans-serif;
+	}
+
+	a, a:visited {
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.container {
+		width: 100vw;
+		max-width: 100%;
+		height: 100vh;
+		overflow: hidden;
+		position: relative;
+	}
+
+	#myCanvas {
+		z-index: 1;
+		position: absolute;
+		top: 0;
+		left: 0;
+	}
+
+	#control {
+		z-index: 2;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 400px;
+		max-width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+
+		transition: transform 0.3s;
+	}
+
+	#panel {
+		width: calc(100% - 50px);
+		height: 100%;
+		background-color: rgba(37, 41, 45, 0.9);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		border-top: solid 10px rgb(64, 224, 208);
+		position: relative;
+	}
+
+	.switch {
+		width: 50px;
+		height: 100%;
+		background-color: rgba(0,0,0,0);
+		position: relative;
+	}
+
+	#switch-button {
+		position: absolute;
+		width: 20px;
+		height: 20px;
+		line-height: 22px;
+		bottom: 15px;
+		left: 15px;
+		color: rgba(64, 224, 208, 0.3);
+		font-weight: 700;
+		font-size: 20px;
+		text-align: center;
+		padding: 5px;
+		border: 2px solid rgba(64, 224, 208, 0.3);
+		border-radius: 20px;
+		transition: 0.3s;
+		cursor: pointer;
+	}
+
+	#switch-button:hover {
+		color: rgba(64, 224, 208, 1);
+		border: 2px solid rgba(64, 224, 208, 1);
+	}
+
+	#start-button {
+		height: 40px;
+		font-size: 20px;
+		border: none;
+		width: 200px;
+		max-width: 80%;
+		background-color: rgba(64, 224, 208, 0.7);
+		border-radius: 5px;
+		margin: 15px 0;
+		cursor: pointer;
+
+		font-weight: 700;
+		color: white;
+	}
+
+	#start-button:hover {
+		background-color: rgba(64, 224, 208, 1);
+	}
+
+	.adjuster-wrapper {
+		width: 100%;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin: 15px 0;
+	}
+
+	.adjuster-main {
+		z-index: 1;
+		position: relative;
+		background-color: rgba(64, 224, 208, 0.7);
+		overflow: hidden;
+		cursor: pointer;
+	}
+
+	.adjuster-main:hover {
+		background-color: rgba(64, 224, 208, 1);
+	}
+
+	.adjuster-main span {
+		padding: 0 10px;
+	}
+
+	.adjuster-percentage {
+		position: absolute;
+		top: 0;
+		left: 0;
+		background-color: rgba(191, 1, 47, 0.8);
+		z-index: 2;
+		transition: transform 0.3s;
+	}
+
+	.adjuster-text {
+		position: absolute;
+		left: 0;
+		top: 0;
+		background-color: rgba(0, 0, 0, 0);
+		z-index: 3;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.emoji-offset {
+		margin-top: 2px;
+		font-size: 18px;
+	}
+
+	.adjuster {
+		height: 40px;
+		width: 200px;
+		max-width: 100%;
+		border-radius: 5px;
+		font-weight: 700;
+		font-size: 24px;
+		color: white;
+	}
+
+	.xiaoxihome {
+		position: absolute;
+		top: 50px;
+		font-size: 12px;
+		color: rgba(255, 255, 255);
+		opacity: 0.2;
+		font-weight: 700;
+		text-transform: uppercase;
+	}
+
+	.xiaoxihome:hover {
+		color: rgb(64, 224, 208);
+		opacity: 1;
+	}
+
+	#red-heart {
+		color: rgb(255, 62, 47);
+		display: inline-block;
+	}
+</style>
+</head>
+<body>
+	<div class='container'>
+		<canvas id='myCanvas' width='1' height='1'></canvas>
+		<div id='control'>
+			<div id='panel'>
+				<button id='start-button'>Pause</button>
+				<div class='xiaoxihome' id='xiaoxihome'>
+					<a href='https://www.xiaoxihome.com' target='_blank'>
+						Made with <span id='red-heart'>&#10084;</span> by Xiaoxihome
+					</a>
+				</div>
+			</div>
+			<div class='switch'>
+				<div id='switch-button'>
+					!
+				</div>
+			</div>
+		</div>
+	</div>
+<script type="text/javascript">
+	"use strict";
+
+	window.onload = main;
+	function main() {
+		const game = new Game();
+		game.main();
+	}
+
+	class Game {
+		constructor() {
+			this.gameParams = this.constructor.initGameParams();
+			this.rockets = [];
+			this.control = new Control();
+			this.loop = this.loop.bind(this);
+			this.isPaused = false;
+			this.newRocketLaunchProbObj = Parameters.newRocketLaunchProb();
+			this.newRocketLaunchProb = this.newRocketLaunchProbObj.default;
+			//
+			this.myEventHandler = this.myEventHandler.bind(this);
+		}
+
+		static initGameParams() {
+			return {
+				width: window.innerWidth,
+				height: window.innerHeight,
+				detonaterTimerBase: 2 * 1000,
+				detonaterTimerVariable: 1 * 1000,
+				gravity: 10
+			}
+		}
+
+		initCanvas() {
+			const canvas = document.getElementById('myCanvas');
+			canvas.width = this.gameParams.width;
+			canvas.height = this.gameParams.height;
+		}
+
+		convertY(y) {
+			return this.gameParams.height - y;
+		}
+
+		renderCircle(obj, ctx) {
+			const y = this.convertY(obj.y);
+			// color
+			ctx.beginPath();
+			ctx.arc(obj.x, y, obj.radius, 0, 2*Math.PI);
+			ctx.fillStyle = `rgba(${obj.color.r}, ${obj.color.g}, ${obj.color.b}, ${obj.opacity})`;
+			ctx.fill();
+			// core
+			ctx.beginPath();
+			ctx.arc(obj.x, y, Math.floor(obj.radius*0.5), 0, 2*Math.PI);
+			ctx.fillStyle = `rgba(255, 255, 255, ${obj.opacity})`;
+			ctx.fill();
+		}
+
+		render() {
+			const canvas = document.getElementById('myCanvas');
+			const ctx = canvas.getContext('2d');
+			DrawSky.nightSky(ctx, this.gameParams.width, this.gameParams.height);
+
+			this.rockets.map(rocket => {
+				if (!rocket.isExploded) {
+					this.renderCircle(rocket, ctx);
+				} else {
+					rocket.flares.map(flare => {
+						this.renderCircle(flare, ctx);
+					})
+				}
+			})
+		}
+
+		myEventHandler(e) {
+			if (e.detail.type === 'start') {
+				this.isPaused = false;
+				this.loop();
+			} else if (e.detail.type === 'pause') {
+				this.isPaused = true;
+			} else if (e.detail.type === 'amount') {
+				const percentage = e.detail.value / 100;
+				const prob = ((this.newRocketLaunchProbObj.max - this.newRocketLaunchProbObj.min) * percentage) + this.newRocketLaunchProbObj.min;
+				this.newRocketLaunchProb = prob;
+			}
+		}
+
+		loop() {
+			if (Math.random() < this.newRocketLaunchProb) {
+				this.rockets.push(new Rocket({
+					width: this.gameParams.width,
+					height: this.gameParams.height,
+					detonaterTimerBase: this.gameParams.detonaterTimerBase,
+					detonaterTimerVariable: this.gameParams.detonaterTimerVariable,
+					gravity: this.gameParams.gravity
+				}));
+			}
+			this.render();
+			this.rockets.map(rocket => rocket.update());
+			this.rockets = this.rockets.filter(rocket => !rocket.isExpired);
+			if (!this.isPaused) requestAnimationFrame(this.loop);
+		}
+
+		main() {
+			this.initCanvas();
+			this.control.init();
+			document.addEventListener('myEvent', this.myEventHandler);
+			this.loop();
+		}
+	}
+
+	class Control {
+		constructor() {
+			this.state = {
+				isPanelVisible: true,
+				isPaused: false,
+			};
+			this.adjusters = {};
+			this.adjusterPercentages = {};
+			this.togglePanel = this.togglePanel.bind(this);
+			this.toggleStartPause = this.toggleStartPause.bind(this);
+			this.amountAdjusterHandler = this.amountAdjusterHandler.bind(this);
+			this.xiaoxihomeHandler = this.xiaoxihomeHandler.bind(this);
+			this.appendAdjuster = this.appendAdjuster.bind(this);
+		}
+
+		appendAdjuster(id, handler, emojiDecimal) {
+			const targetEl = this.panel;
+			const div = document.createElement('div');
+			div.className = 'adjuster-wrapper';
+			div.innerHTML = `
+					<div id='adjuster-${id}' class='adjuster adjuster-main'>
+						<div id='adjuster-percentage-${id}' class='adjuster adjuster-percentage'>
+							&nbsp;
+						</div>
+						<div class='adjuster adjuster-text'>
+							<span>-</span>
+							<span class='emoji-offset'>${emojiDecimal}</span>
+							<span>+</span>
+						</div>
+					</div>
+			`;
+			targetEl.appendChild(div);
+
+			this.adjusters[`${id}`]=  document.getElementById(`adjuster-${id}`);
+			this.adjusterPercentages[`${id}`] = document.getElementById(`adjuster-percentage-${id}`);
+
+			this.adjusters[`${id}`].onclick = handler;
+		}
+
+		toggleStartPause() {
+			if (this.state.isPaused) {
+				this.startButton.textContent = 'Pause';
+				document.dispatchEvent(new CustomEvent('myEvent', {
+				    detail: { type: 'start' }
+				  }));
+			} else {
+				this.startButton.textContent = 'Start';
+				document.dispatchEvent(new CustomEvent('myEvent', {
+				    detail: { type: 'pause' }
+				  }));
+			}
+			this.state.isPaused = !this.state.isPaused;
+		}
+
+		togglePanel() {
+			const panelWidth =  this.state.isPanelVisible ? -this.panel.getBoundingClientRect().width : 0;
+			this.control.style.webkitTransform = `translateX(${panelWidth}px)`;
+			this.switchButton.textContent = this.state.isPanelVisible ? '?' : '\u21e6';
+			this.state.isPanelVisible = !this.state.isPanelVisible;
+		}
+
+		amountAdjusterHandler(e) {
+			const clicked = e.clientX;
+			const el = this.adjusters[1].getBoundingClientRect();
+			const left = el.left;
+			const width = el.width;
+			let percentage = Math.round(((clicked - left) / width) * 100);
+			if (percentage > 92) {
+				percentage = 100;
+			} else if (percentage < 8) {
+				percentage = 0;
+			}
+			
+			this.adjusterPercentages[1].style.transform = `translateX(${-100+percentage}%)`;
+			document.dispatchEvent(new CustomEvent('myEvent', {
+				    detail: {
+				    	type: 'amount', 
+				    	value: percentage
+				    }
+			}));
+		}
+
+		xiaoxihomeHandler() {
+			this.redHeart.style = 'none';
+			this.redHeart.style.transform = 'scale(5.0)';
+			setTimeout(() => {
+				this.redHeart.style.transition = 'transform 0.5s';
+				this.redHeart.style.transform = 'scale(1.0)';
+			}, 50);
+		}
+
+
+		init() {
+			this.switchButton = document.getElementById('switch-button');
+			this.startButton = document.getElementById('start-button');
+			this.panel = document.getElementById('panel');
+			this.control = document.getElementById('control');
+			this.amountAdjuster = document.getElementById('amount-adjuster');
+			this.amountAdjusterPercentage = document.getElementById('amount-adjuster-percentage');
+			this.xiaoxihome = document.getElementById('xiaoxihome');
+			this.redHeart = document.getElementById('red-heart');
+
+			this.switchButton.onclick = this.togglePanel;
+			this.startButton.onclick = this.toggleStartPause;
+
+			// amount adjuster
+			this.appendAdjuster(1, this.amountAdjusterHandler, '&#127879');
+			const defaultPercentage = Math.round(((Parameters.newRocketLaunchProb().default - Parameters.newRocketLaunchProb().min) / (Parameters.newRocketLaunchProb().max - Parameters.newRocketLaunchProb().min)) * 100);
+			this.adjusterPercentages[1].style.transform = `translateX(${-100+defaultPercentage}%)`;
+
+			// time adjuster
+			this.appendAdjuster(2, this.amountAdjusterHandler, '&#128336');
+
+			// credit
+			this.xiaoxihome.onmouseover = this.xiaoxihomeHandler;
+
+
+			// init
+			this.togglePanel();
+		}
+	}
+
+	class Parameters {
+		static newRocketLaunchProb() {
+			// reversed: 1-x
+			return {
+				min: 0.01,
+				default: 0.015,
+				max: 0.05,
+			}
+		}
+	}
+
+	class Rocket {
+		constructor({
+			width,
+			height,
+			detonaterTimerBase,
+			detonaterTimerVariable,
+			gravity
+		}) {
+			this.isExploded = false;
+			this.isExpired = false;
+			this.gravity = gravity;
+			this.t0 = Date.now();
+			this.calcVelocityResult = this.constructor.calcVelocity({
+				width: width,
+				height: height,
+				detonaterTimerBase: detonaterTimerBase,
+				detonaterTimerVariable: detonaterTimerVariable,
+				gravity: gravity
+			});
+			this.width = width;
+			this.height = height;
+			this.detonaterTimer = this.calcVelocityResult.detonaterTimer;
+			this.vx = this.calcVelocityResult.vx;
+			this.vy = this.calcVelocityResult.vy;
+			this.x = this.calcVelocityResult.startX;
+			this.y = this.calcVelocityResult.startY;
+			this.radius = 5;
+			this.color = {
+				r: Math.round(Math.random() * 255),
+				g: Math.round(Math.random() * 155 + 100),
+				b: Math.round(Math.random() * 255),
+			};
+			this.opacity = 1;
+			this.flares = [];
+			this.layers = Math.round(Math.random() * 8);
+		}
+
+		static calcVelocity({
+			width,
+			height,
+			detonaterTimerBase,
+			detonaterTimerVariable,
+			gravity
+		}) {
+			const targetX = Math.round((0.2 + Math.random() * 0.6) * width);
+			const targetY = Math.round((0.4 + Math.random() * 0.4) * height);
+			const startX = Math.round((0.4 + Math.random() * 0.2) * width);
+			const startY = 0;
+			const timer = detonaterTimerBase + Math.random() * detonaterTimerVariable;
+			const t = timer / 1000;
+			const vx = (targetX - startX) / t;
+			// s = v0t + 0.5*at^2
+			const vy = ((targetY - startY) + 0.5 * gravity * t * t) / t;
+
+			return {
+				vx: vx,
+				vy: vy,
+				startX: startX,
+				startY: startY,
+				detonaterTimer: timer
+			}
+		}
+
+		explode(flaresCount, vBenchMark) {
+			for (let i=0; i<flaresCount; i++) {
+				this.flares.push(new Flare({
+					width: this.calcVelocityResult.width,
+					height: this.calcVelocityResult.height,
+					gravity: this.gravity,
+					vBenchMark: vBenchMark,
+					x: this.x,
+					y: this.y,
+					color: this.color,
+					timer: this.detonaterTimer
+				}));
+			}
+		}
+
+		update() {
+			const tick = 1 / 60;
+			const current = Date.now();
+
+			if (this.isExploded) {
+				let isAnyFlareActive = 1;
+				this.flares.map(flare => {
+					flare.update();
+					isAnyFlareActive = flare.isExpired ? isAnyFlareActive * 0 : isAnyFlareActive * 1;
+					if (isAnyFlareActive === 0) this.isExpired = true;
+				});
+			} else if (current - this.t0 >= this.detonaterTimer && !this.isExploded) {
+				const flaresCount = Math.round(Math.random() * 20 + 5);
+				const vBenchMark = Flare.getVBenchMark({
+					width: this.width,
+					height: this.height
+					});
+				this.explode(flaresCount, vBenchMark);
+				for (let i=1; i<this.layers; i++) {
+					const decay = 1 - i * 0.1;
+					setTimeout(() => {
+						this.explode(flaresCount * decay, vBenchMark * decay);
+					}, 100 * i);
+				}
+				this.isExploded = true;
+			} else {
+				this.x += this.vx * tick;
+				this.y += this.vy * tick;
+				this.vy -= this.gravity * tick;
+				this.radius *= 0.99;
+			}
+		}
+	}
+
+	class Flare {
+		constructor({width, height, gravity, vBenchMark, x, y, color, timer}) {
+			this.isExpired = false;
+			this.isDecaying = false;
+			this.t0 = Date.now();
+			this.alpha = Math.random() * Math.PI * 2;
+			this.calcVelocityResult = this.constructor.calcVelocity(vBenchMark, this.alpha);
+			this.vx = this.calcVelocityResult.vx;
+			this.vy = this.calcVelocityResult.vy;
+			this.gravity = gravity;
+			this.x = x;
+			this.y = y;
+			this.radius = 5;
+			this.radiusDecay = 0.999;
+			this.color = color;
+			this.opacity = 1;
+			this.timer = timer;
+		}
+
+		static getVBenchMark({width, height}) {
+			const shorter = Math.min(width, height);
+			const vMax = 0.5 * shorter;
+			const vBenchMark = 0.5 * vMax + Math.random() * 0.5 * vMax;
+			return vBenchMark;
+		}
+
+		static calcVelocity(vBenchMark, alpha) {
+			const v0 = 0.9 * vBenchMark + Math.random() * 0.1 * vBenchMark;
+			//console.log(v0);
+			return {
+				vx: v0 * Math.sin(alpha),
+				vy: v0 * Math.cos(alpha),
+			}
+		}
+
+		update() {
+			const tick = 1 / 60;
+			const dragCo = 0.99;
+			const now = Date.now();
+			this.x += this.vx * tick;
+			this.y += this.vy * tick;
+			this.vy = this.vy * dragCo - this.gravity * tick;
+			this.vx = this.vx * dragCo;
+			this.radius *= this.radiusDecay;
+
+			if ((now - this.t0) > this.timer && !this.isExpired && !this.isDecaying) {
+				this.radiusDecay = 0.95;
+				this.isDecaying = true;
+			} else if (this.isDecaying) {
+				this.opacity -= 0.01;
+				if (this.opacity <= 0) {
+					this.isExpired = true;
+				}
+			}
+
+		}
+	}
+
+	class DrawSky {
+		static nightSky(ctx, width, height) {
+			// const grd = ctx.createLinearGradient(0, 0, 0, height);
+			// grd.addColorStop(0, `rgba(0, 0, 0, 0.1)`);
+			// grd.addColorStop(0.6, `rgba(0, 0, 0, 0.1)`);
+			// grd.addColorStop(1, `rgba(20, 45, 105, 0.1)`);
+			// grd.addColorStop(1, `rgba(50, 150, 240, 0.1)`);
+			// ctx.fillStyle = grd;
+			ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+			ctx.fillRect(0, 0, width, height);
+		}
+	}
+</script>
+</body>
+</html>
