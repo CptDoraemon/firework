@@ -126,7 +126,8 @@
 	}
 
 	.adjuster-main span {
-		padding: 0 10px;
+		width: 50px;
+		text-align: center;
 	}
 
 	.adjuster-percentage {
@@ -187,7 +188,7 @@
 </style>
 </head>
 <body>
-	<div class='container'>
+	<div class='container' id='container'>
 		<canvas id='myCanvas' width='1' height='1'></canvas>
 		<div id='control'>
 			<div id='panel'>
@@ -222,7 +223,8 @@
 			this.loop = this.loop.bind(this);
 			this.isPaused = false;
 			this.newRocketLaunchProbObj = Parameters.newRocketLaunchProb();
-			this.newRocketLaunchProb = this.newRocketLaunchProbObj.default;
+			this.newRocketLaunchProb = this.newRocketLaunchProbObj.defaultValue;
+			this.canvasTime = Parameters.canvasTime().defaultValue;
 			//
 			this.myEventHandler = this.myEventHandler.bind(this);
 		}
@@ -264,7 +266,7 @@
 		render() {
 			const canvas = document.getElementById('myCanvas');
 			const ctx = canvas.getContext('2d');
-			DrawSky.nightSky(ctx, this.gameParams.width, this.gameParams.height);
+			DrawSky.draw(ctx, this.gameParams.width, this.gameParams.height, this.canvasTime);
 
 			this.rockets.map(rocket => {
 				if (!rocket.isExploded) {
@@ -284,9 +286,12 @@
 			} else if (e.detail.type === 'pause') {
 				this.isPaused = true;
 			} else if (e.detail.type === 'amount') {
+				console.log('called', e.detail.value);
 				const percentage = e.detail.value / 100;
 				const prob = ((this.newRocketLaunchProbObj.max - this.newRocketLaunchProbObj.min) * percentage) + this.newRocketLaunchProbObj.min;
 				this.newRocketLaunchProb = prob;
+			} else if (e.detail.type === 'time') {
+				this.canvasTime = e.detail.value / 100;
 			}
 		}
 
@@ -325,8 +330,10 @@
 			this.togglePanel = this.togglePanel.bind(this);
 			this.toggleStartPause = this.toggleStartPause.bind(this);
 			this.amountAdjusterHandler = this.amountAdjusterHandler.bind(this);
+			this.timeAdjusterHandler = this.timeAdjusterHandler.bind(this);
 			this.xiaoxihomeHandler = this.xiaoxihomeHandler.bind(this);
 			this.appendAdjuster = this.appendAdjuster.bind(this);
+			this.myCanvasClickHandler = this.myCanvasClickHandler.bind(this);
 		}
 
 		appendAdjuster(id, handler, emojiDecimal) {
@@ -375,9 +382,9 @@
 			this.state.isPanelVisible = !this.state.isPanelVisible;
 		}
 
-		amountAdjusterHandler(e) {
+		getAndUpdateAdjusterPercentage(e, adjustId) {
 			const clicked = e.clientX;
-			const el = this.adjusters[1].getBoundingClientRect();
+			const el = this.adjusters[adjustId].getBoundingClientRect();
 			const left = el.left;
 			const width = el.width;
 			let percentage = Math.round(((clicked - left) / width) * 100);
@@ -386,14 +393,28 @@
 			} else if (percentage < 8) {
 				percentage = 0;
 			}
-			
-			this.adjusterPercentages[1].style.transform = `translateX(${-100+percentage}%)`;
+			this.adjusterPercentages[adjustId].style.transform = `translateX(${-100+percentage}%)`;
+			return percentage;
+		}
+
+		dispatchPercentageEvent(typeString, percentage) {
 			document.dispatchEvent(new CustomEvent('myEvent', {
 				    detail: {
-				    	type: 'amount', 
+				    	type: typeString, 
 				    	value: percentage
 				    }
 			}));
+		}
+
+		amountAdjusterHandler(e) {
+			const percentage = this.getAndUpdateAdjusterPercentage(e, 1);
+			this.dispatchPercentageEvent('amount', percentage);
+			
+		}
+
+		timeAdjusterHandler(e) {
+			const percentage = this.getAndUpdateAdjusterPercentage(e, 2);
+			this.dispatchPercentageEvent('time', percentage);
 		}
 
 		xiaoxihomeHandler() {
@@ -405,8 +426,13 @@
 			}, 50);
 		}
 
+		myCanvasClickHandler() {
+			if (this.state.isPanelVisible) this.togglePanel();
+		}
+
 
 		init() {
+			this.myCanvas = document.getElementById('myCanvas');
 			this.switchButton = document.getElementById('switch-button');
 			this.startButton = document.getElementById('start-button');
 			this.panel = document.getElementById('panel');
@@ -416,16 +442,17 @@
 			this.xiaoxihome = document.getElementById('xiaoxihome');
 			this.redHeart = document.getElementById('red-heart');
 
+			this.myCanvas.onclick = this.myCanvasClickHandler;
 			this.switchButton.onclick = this.togglePanel;
 			this.startButton.onclick = this.toggleStartPause;
 
 			// amount adjuster
 			this.appendAdjuster(1, this.amountAdjusterHandler, '&#127879');
-			const defaultPercentage = Math.round(((Parameters.newRocketLaunchProb().default - Parameters.newRocketLaunchProb().min) / (Parameters.newRocketLaunchProb().max - Parameters.newRocketLaunchProb().min)) * 100);
-			this.adjusterPercentages[1].style.transform = `translateX(${-100+defaultPercentage}%)`;
+			this.adjusterPercentages[1].style.transform = `translateX(${-100+Parameters.newRocketLaunchProb().defaultPercentage()}%)`;
 
 			// time adjuster
-			this.appendAdjuster(2, this.amountAdjusterHandler, '&#128336');
+			this.appendAdjuster(2, this.timeAdjusterHandler, '&#128336');
+			this.adjusterPercentages[2].style.transform = `translateX(${-100+Parameters.canvasTime().defaultPercentage()}%)`;
 
 			// credit
 			this.xiaoxihome.onmouseover = this.xiaoxihomeHandler;
@@ -436,14 +463,25 @@
 		}
 	}
 
+	class AdjusterParameters {
+		constructor(min, defaultValue, max) {
+			this.min = min;
+			this.defaultValue = defaultValue;
+			this.max = max;
+		}
+
+		defaultPercentage() {
+			return Math.round(((this.defaultValue - this.min) / (this.max - this.min)) * 100);
+		}
+	}
+
 	class Parameters {
 		static newRocketLaunchProb() {
-			// reversed: 1-x
-			return {
-				min: 0.01,
-				default: 0.015,
-				max: 0.05,
-			}
+			return new AdjusterParameters(0.005, 0.015, 0.1);
+		}
+
+		static canvasTime() {
+			return new AdjusterParameters(0.0, 0.5, 1.0);
 		}
 	}
 
@@ -587,7 +625,6 @@
 
 		static calcVelocity(vBenchMark, alpha) {
 			const v0 = 0.9 * vBenchMark + Math.random() * 0.1 * vBenchMark;
-			//console.log(v0);
 			return {
 				vx: v0 * Math.sin(alpha),
 				vy: v0 * Math.cos(alpha),
@@ -618,15 +655,68 @@
 	}
 
 	class DrawSky {
-		static nightSky(ctx, width, height) {
-			// const grd = ctx.createLinearGradient(0, 0, 0, height);
-			// grd.addColorStop(0, `rgba(0, 0, 0, 0.1)`);
-			// grd.addColorStop(0.6, `rgba(0, 0, 0, 0.1)`);
-			// grd.addColorStop(1, `rgba(20, 45, 105, 0.1)`);
-			// grd.addColorStop(1, `rgba(50, 150, 240, 0.1)`);
-			// ctx.fillStyle = grd;
-			ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+		static sunsetStart = 0.0;
+		static sunsetEnd = 0.2;
+		static moonStart = 0.2;
+		static moonMid = 0.5;
+		static moonEnd = 0.8;
+		static sunriseStart = 0.8;
+		static sunriseEnd = 1.0;
+		static skyGradient = [
+		`rgb(0, 0, 0`,
+		`rgb(2, 14, 20`,
+		`rgb(5, 28, 60`,
+		`rgb(7, 42, 78`,
+		`rgb(10, 48, 85`,
+		`rgb(19, 66, 106`,
+		`rgb(35, 94, 137`,
+		`rgb(60, 127, 166`,
+		`rgb(80, 146, 178`,
+		`rgb(100, 163, 184`,
+		`rgb(128, 180, 182`,
+		`rgb(151, 192, 177`,
+		`rgb(178, 201, 166`,
+		`rgb(194, 202, 155`,
+		`rgb(213, 199, 137`,
+		`rgb(228, 189, 118`,
+		`rgb(238, 168, 92`,
+		`rgb(240, 150, 75`,
+		`rgb(236, 126, 57`,
+		`rgb(235, 120, 53`
+		];
+
+		static draw(ctx, width, height, canvasTime) {
+			this.drawSky(ctx, width, height, canvasTime);
+		}
+
+		static drawSky(ctx, width, height, canvasTime) {
+			let percentage = 1 - 2 * Math.abs(canvasTime - this.moonMid);
+			if (percentage >= 0.85) {
+				// safe area for pure black
+				ctx.fillStyle = `rgba(0, 0, 0, 0.1)`;
+			} else {
+				const stepMin = 1 / this.skyGradient.length;
+				const stepMax = 1;
+				const step = stepMin + percentage * (stepMax - stepMin);
+				const grd = ctx.createLinearGradient(0, 0, 0, height);
+				(() => {
+					for (let i=0; i<this.skyGradient.length; i++) {
+						const point = i * step;
+						if (point <= 1) {
+							grd.addColorStop(i * step, `${this.skyGradient[i]}, 0.1)`);
+						} else {
+							grd.addColorStop(1.0, `${this.skyGradient[i]}, 0.1)`);
+							return;
+						}
+					}
+				})();
+				ctx.fillStyle = grd;
+			}
 			ctx.fillRect(0, 0, width, height);
+		}
+
+		static drawMoon(ctx, width, height, canvasTime) {
+
 		}
 	}
 </script>
