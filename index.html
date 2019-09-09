@@ -654,36 +654,8 @@
 		}
 	}
 
+
 	class DrawSky {
-		static sunsetStart = 0.0;
-		static sunsetEnd = 0.2;
-		static moonStart = 0.2;
-		static moonMid = 0.5;
-		static moonEnd = 0.8;
-		static sunriseStart = 0.8;
-		static sunriseEnd = 1.0;
-		static skyGradient = [
-		`rgb(0, 0, 0`,
-		`rgb(2, 14, 20`,
-		`rgb(5, 28, 60`,
-		`rgb(7, 42, 78`,
-		`rgb(10, 48, 85`,
-		`rgb(19, 66, 106`,
-		`rgb(35, 94, 137`,
-		`rgb(60, 127, 166`,
-		`rgb(80, 146, 178`,
-		`rgb(100, 163, 184`,
-		`rgb(128, 180, 182`,
-		`rgb(151, 192, 177`,
-		`rgb(178, 201, 166`,
-		`rgb(194, 202, 155`,
-		`rgb(213, 199, 137`,
-		`rgb(228, 189, 118`,
-		`rgb(238, 168, 92`,
-		`rgb(240, 150, 75`,
-		`rgb(236, 126, 57`,
-		`rgb(235, 120, 53`
-		];
 
 		static draw(ctx, width, height, canvasTime) {
 			this.drawSky(ctx, width, height, canvasTime);
@@ -719,6 +691,36 @@
 
 		}
 	}
+	
+	DrawSky.sunsetStart = 0.0;
+	DrawSky.sunsetEnd = 0.2;
+	DrawSky.moonStart = 0.2;
+	DrawSky.moonMid = 0.5;
+	DrawSky.moonEnd = 0.8;
+	DrawSky.sunriseStart = 0.8;
+	DrawSky.sunriseEnd = 1.0;
+	DrawSky.skyGradient = [
+	`rgb(0, 0, 0`,
+	`rgb(2, 14, 20`,
+	`rgb(5, 28, 60`,
+	`rgb(7, 42, 78`,
+	`rgb(10, 48, 85`,
+	`rgb(19, 66, 106`,
+	`rgb(35, 94, 137`,
+	`rgb(60, 127, 166`,
+	`rgb(80, 146, 178`,
+	`rgb(100, 163, 184`,
+	`rgb(128, 180, 182`,
+	`rgb(151, 192, 177`,
+	`rgb(178, 201, 166`,
+	`rgb(194, 202, 155`,
+	`rgb(213, 199, 137`,
+	`rgb(228, 189, 118`,
+	`rgb(238, 168, 92`,
+	`rgb(240, 150, 75`,
+	`rgb(236, 126, 57`,
+	`rgb(235, 120, 53`
+	];
 </script>
 </body>
 </html>
