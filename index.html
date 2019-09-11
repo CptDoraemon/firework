@@ -33,7 +33,6 @@
 		top: 0;
 		left: 0;
 		width: 400px;
-		max-width: 100%;
 		height: 100%;
 		display: flex;
 		flex-direction: row;
@@ -185,6 +184,38 @@
 		color: rgb(255, 62, 47);
 		display: inline-block;
 	}
+
+	@media only screen and (max-width: 800px) {
+		#control {
+			width: 100%;
+		}
+
+		#panel {
+			width: calc(100% - 100px);
+		}
+
+		.switch {
+			width: 100px;
+			height: 100%;
+			background-color: rgba(0,0,0,0);
+		}
+
+		#switch-button {
+			width: 50px;
+			height: 50px;
+			line-height: 52px;
+			top: calc(100% - 80px);
+			left: 15px;
+			font-size: 40px;
+			border: 5px solid rgba(64, 224, 208, 0.3);
+			border-radius: 50px;
+		}
+
+
+		#switch-button:hover {
+			border: 5px solid rgba(64, 224, 208, 1);
+		}
+	}
 </style>
 </head>
 <body>
@@ -243,6 +274,9 @@
 			const canvas = document.getElementById('myCanvas');
 			canvas.width = this.gameParams.width;
 			canvas.height = this.gameParams.height;
+			// mobile
+			const container = document.getElementById('container');
+			container.style.height = `${this.gameParams.height}px`;
 		}
 
 		convertY(y) {
@@ -691,7 +725,7 @@
 
 		}
 	}
-	
+
 	DrawSky.sunsetStart = 0.0;
 	DrawSky.sunsetEnd = 0.2;
 	DrawSky.moonStart = 0.2;
