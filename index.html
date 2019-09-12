@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 	body {
 		margin: 0;
@@ -693,6 +694,7 @@
 
 		static draw(ctx, width, height, canvasTime) {
 			this.drawSky(ctx, width, height, canvasTime);
+			this.drawMoon(ctx, width, height, canvasTime);
 		}
 
 		static drawSky(ctx, width, height, canvasTime) {
@@ -722,7 +724,10 @@
 		}
 
 		static drawMoon(ctx, width, height, canvasTime) {
-
+			// ctx.beginPath();
+			// ctx.arc(0.5 * width, 0.5 * height, 50, 0, 2*Math.PI);
+			// ctx.fillStyle = `rgba(255, 255, 255, 1)`;
+			// ctx.fill();
 		}
 	}
 
